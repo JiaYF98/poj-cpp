@@ -1,0 +1,2822 @@
+引用：
+定义引用时一定要将其初始化成引用某个变量
+
+初始化后，它就一直引用该变量，不会再引用别的变量了
+
+引用只能引用变量，不能引用常量和表达式
+
+引用作为函数的返回值：
+int n = 4;
+int & SetValue() { return n; }
+int main() {
+	SetValue() = 40;
+	cout << n;
+	return 0;
+}
+
+常引用：
+定义引用时，前面加 const 关键字，即为“常引用”
+int n;
+const int & r = n;
+r 的类型是 const int &
+不能通过常引用去修改其引用的内容，可以用其它方式去修改
+
+常引用和非常引用的转换：
+const T & 和 T & 是不同的类型
+T & 类型的引用或 T 类型的变量可以用来初始化 const T & 类型的引用
+const T 类型的常变量和 const T & 类型的引用则不能用来初始化 T &类型的引用，除非进行强制类型转换
+
+内联函数
+使用内联函数能减少函数调用所需要的时间开销
+在函数定义前面加上 "inline" 关键字，即可以定义内联函数
+如：
+inline int Max(int a, int b) {
+	if(a > b)
+		return a;
+	return b;
+}
+内联函数内的代码应该是很简单、执行很快的几条语句。
+调用内联函数的语句前面，必须已经出现内联函数的定义，不能只出现内联函数的声明
+
+同名函数只有参数表不同才算重载；两个同名函数参数表相同而返回值类型不同，不是重载而是重复定义，是不允许的
+
+函数的缺省参数：
+定义函数的时候可以让最右边的连续若干个参数有缺省值，那么调用参数的时候，若相应位置不写参数，参数就是缺省值
+函数参数可缺省的目的在于提高程序的可扩展性，即如果某个写好的函数要添加新的参数，而原先那些调用该函数的语句，未必需要使用新增的参数，那么为了避免原先那些函数调用语句的修改，就可以使用缺省参数
+
+
+
+类和对象
+构造函数的使用：
+class CTest {
+    public :
+        CTest(int n) {}
+        CTest(int n, int m) {}
+        CTest() {}
+};
+
+int main() {
+    //3 个元素分别用构造函数(1), (2), (3)初始化
+    CTest array1[3] = {1, CTest(1, 2)};
+    //3 个元素分别用构造函数(2), (2), (1)初始化
+    CTest array2[3] = {CTest(2, 3), CTest(1, 2), 1};
+    //两个元素指向的对象分别用构造函数(1), (2)初始化
+    CTest* array3[3] = {new CTest(4), new CTest(1, 2)};	//生成了两个对象，array3[2]没有初始化，其值是随机的，不知道指向哪里
+    return 0;
+}
+
+
+
+复制构造函数：
+复制构造函数只有一个参数，参数类型是本类的引用，默认构造函数（即无参构造函数）不一定存在，但是复制构造函数总会存在
+复制构造函数的使用：
+class Complex {
+	public :
+		double real, imag;
+		Complex(double r, double i) {
+			real = r; imag = i;
+		}
+};
+int main() {
+	Complex c1(1, 2);
+	Complex c2(c1);
+	cout << c2.real << "," << c2.imag;	//输出 1, 2
+	return 0;
+}
+
+如果定义自己的复制构造函数，则默认的复制构造函数不存在
+class Complex {
+	public :
+		double real, imag;
+		Complex(double r, double i) {
+			real = r, imag = i;
+		}
+		Complex(const Complex &c) {
+			real = c.real;
+			imag = c.imag;
+			cout << "Copy Constructor called" << endl;
+		}
+};
+int main() {
+	Complex c1(1, 2);
+	Complex c2(c1);
+	cout << c2.real << "," << c2.imag;
+	return 0;
+}
+
+复制构造函数起作用的三种情况：
+(1) 当用一个对象去初始化同类的另一个对象时
+Complex c2(c1);
+Complex c2 = c1;	//初始化语句，非赋值语句
+
+(2) 如果某函数有一个参数是类 A 的对象，那么该函数被调用时，类 A 的复制构造函数将被调用
+class A {
+	public :
+		A() {}
+		A(A & a) {
+			cout << "Copy constructor called" << endl;
+		}
+};
+void Func(A a1) {}
+int main() {
+	A a2;
+	Func(a2);
+	return 0;
+}
+输出：
+Copy constructor called
+此处也可以说明，形参并不一定是实参的复制品，因为此处只是调用了复制构造函数但没有进行复制的工作
+
+(3) 如果函数的返回值是类 A 的对象时，则函数返回时，A 的复制构造函数被调用：
+（有的编译器中不调用，需把111行的 b 变成全局变量才会调用复制构造函数）
+class A {
+    public :
+        int v;
+        A(int n) { v = n; }
+        A(const A & a) {
+            v = a.v;
+            cout << "Copy constructor called" << endl;
+        }
+};
+A Func() {
+    A b(4);
+    return b;
+}
+int main() {
+    cout << Func().v << endl;
+    return 0;
+}
+
+注意：对象间赋值并不导致复制构造函数被调用
+class CMyclass {
+    public :
+        int n;
+        CMyclass() {}
+        CMyclass(const CMyclass & C) {
+            n = 2 * C.n;
+        }
+};
+int main() {
+    CMyclass c1, c2;
+    c1.n = 5;
+    c2 = c1;
+    CMyclass c3(c1);
+    cout << "c2.n=" << c2.n << endl;
+    cout << "c3.n=" << c3.n << endl;
+    return 0;
+}
+输出:
+c2.n=5
+c3.n=10
+
+void fun(CMyclass obj_) {
+	cout << "fun" << endl;
+}
+这样的函数，调用时生成形参会引发复制构造函数调用，开销比较大。
+所以可以考虑使用 CMyclass & 引用类型作为参数。
+如果希望确保实参的值在函数中不应被改变，那么可以加上 const 关键字
+void fun(const CMyclass & boj) {
+	//函数中任何试图改变 obj 值的语句都将是变成非法
+}
+
+
+
+类型转换构造函数：
+定义转换构造函数的目的是实现类型的自动转换
+只有一个参数，而且不是复制构造函数的构造函数，一般可以看作是转换构造函数
+当需要的时候，编译系统会自动调用转换构造函数，建立一个无名的临时对象（或临时变量）
+class Complex {
+    public :
+        double real, imag;
+        Complex(int i) {
+            cout << "IntConstructor called" << endl;
+            real = i; imag = 0;
+        }
+        Complex(char c) {
+            cout << "IntConstructor called" << endl;
+            real = 0;
+            imag = c - 'a' + 1;
+        }
+        Complex(double r, double i) {
+            real = r; imag = i;
+        }
+};
+int main() {
+    Complex c1(7, 8);
+    Complex c2 = 12;    //调用一次类型转换构造函数
+    c1 = 9;             //9 被自动转换成一个临时 complex 对象
+    c2 = 'b';           // 'b' 被自动转换成一个临时 complex 对象
+    cout << c1.real << "," << c1.imag << endl;
+    cout << c2.real << "," << c2.imag << endl;
+    return 0;
+}
+输出：
+IntConstructor called
+IntConstructor called
+IntConstructor called
+9,0
+0,2
+
+
+
+析构函数：
+名字与类名相同，在前面加 '~'，没有参数和返回值，一个类最多只能有一个析构函数
+析构函数对象消亡时即自动被调用。可以定义析构函数来在对象消亡前做善后工作，比如释放分配的空间等
+如果定义类时没写析构函数，则编译器生成缺省析构函数。缺省析构函数什么也不做
+如果定义了析构函数，则编译器不生成缺省析构函数
+例：
+class String {
+    private :
+        char * p;
+    public :
+        String() {
+            p = new char[10];
+        }
+        ~ String();
+};
+String::~String() {
+    delete[] p;
+}
+
+对象数组生命期结束时，对象数组的每个元素的析构函数都会被调用
+class Ctest {
+    public :
+        ~ Ctest() {
+            cout << "destructor called" << endl;
+        }
+};
+int main() {
+    Ctest array[2];
+    cout << "End Main" << endl;
+    return 0;
+}
+输出：
+End Main
+destructor called
+destructor called
+
+delete 运算导致析构函数调用
+Ctest * pTest;
+pTest = new Ctest;	//构造函数调用
+delete pTest;		//析构函数调用
+
+pTest = new Ctest[3];	//构造函数调用3次
+delete[] pTest			//析构函数调用3次
+若 new 一个对象数组，那么用 delete 释放时应该写[]。否则只 delete 一个对象（调用一次析构函数）
+
+析构函数在对象作为函数返回值返回后被调用
+class CMyclass {
+    public :
+        ~ CMyclass() { cout << "destructor" << endl; }
+};
+CMyclass obj;
+CMyclass fun(CMyclass sobj) {   //参数对象消亡会导致析构函数被调用
+    return sobj;    //函数调用返回时生成临时对象返回
+}
+int main() {
+    obj = fun(obj); //函数调用的返回值（临时对象）被用过后，该临时对象析构函数被调用
+    return 0;       //实参消亡，析构函数被调用
+}
+输出：
+destructor
+destructor
+destructor
+
+
+
+构造函数、析构函数和变量的生存期
+class Demo {
+    int id;
+    public :
+        Demo(int i) {
+            id = i;
+            cout << "id=" << id << "constructed" << endl;
+        }
+        ~ Demo() {
+            cout << "id=" << id << "destructed" << endl;
+        }
+};
+Demo d1(1);
+void Func() {
+    static Demo d2(2);	//在程序结束时消亡
+    Demo d3(3);
+    cout << "func" << endl;
+}
+int main() {
+    Demo d4(4);
+    d4 = 6;
+    cout << "main" << endl;
+    { Demo d5(5); }
+    Func();
+    cout << "main ends" << endl;
+    return 0;
+}
+输出：
+id=1constructed
+id=4constructed
+id=6constructed
+id=6destructed
+main
+id=5constructed
+id=5destructed
+id=2constructed
+id=3constructed
+func
+id=3destructed
+main ends
+id=6destructed
+id=2destructed
+id=1destructed
+先构造的后析构
+
+
+
+this 指针的作用
+其作用是指向成员函数所作用的对象
+非静态成员函数中可以直接使用 this 来代表指向该函数作用的对象的指针
+class Complex {
+	public :
+		double real, imag;
+		void Print() { cout << real << "," << imag; }
+		Complex(double r, double i):real(r), imag(i) {}
+		Complex AddOne() {
+			this->real++;
+			this->Print();
+			return *this;
+		}
+};
+int main() {
+	Complex c1(1, 1), c2(0, 0);
+	c2 = c1.AddOne();
+	return 0;
+}
+输出
+2,1
+
+class A {
+        int i;
+    public :
+        void Hello() { cout << "Hello" << endl; }
+		//void Hello(A * this) { cout << "hello" << endl; }
+};
+int main() {
+    A * p = nullptr;
+    p->Hello();
+}
+输出：
+"Hello"
+p->Hello()实质上应该是 Hello(p)，若 Hello 函数中有对成员变量的访问，则程序会出错
+
+
+
+静态成员变量和静态成员函数
+静态成员：在说明前面加了 static 关键字的成员
+class CRectangle {
+	private :
+		int w, h;
+		static int nTotalArea;		//静态成员变量
+		static int nTotalNumber;
+	public :
+		CRectangle(int w_, int h_);
+		CRectangle(const CRectangle &r);
+		~CRectangle();
+		static void PrintTotal();	//静态成员函数
+};
+
+普通成员变量每个对象有各自的一份，而静态成员变量一共就一份，为所有对象共享
+sizeof 运算符不会计算静态成员变量
+普通成员函数必须具体作用于某个对象，而静态成员函数并不具体作用于某个对象
+静态成员不需要通过对象就能访问
+
+访问静态成员
+1) 类名::成员名
+	CRectangle::PrintTotal();
+2) 对象名.成员名
+	CRectangle r;
+	r.PrintTotal();	//PrintTotal()并不作用于 r 上
+3) 指针->成员名
+	CRectangle * p = &r;
+	p->PrintTotal();
+4) 引用.成员名
+	CRectangle & ref = r;
+	int n = ref.nTotalNumber;
+	
+静态成员变量本质上是全局变量，哪怕一个对象都不存在，类的静态成员变量也存在
+静态成员函数本质上是全局函数
+
+class CRectangle {
+	private :
+		int w, h;
+		static int nTotalArea;		//静态成员变量
+		static int nTotalNumber;
+	public :
+		CRectangle(int w_, int h_);
+		CRectangle(const CRectangle &r);	//注意复制构造函数的情况
+		~CRectangle();
+		static void PrintTotal();	//静态成员函数
+};
+
+CRectangle::CRectangle(int w_, int h_) {
+	w = w_;
+	h = h_;
+	nTotalNumber++;
+	nTotalArea += w * h;
+}
+
+CRectangle::CRectangle(const CRectangle & r) {
+	w = r.w;
+	h = r.h;
+	nTotalNumber++;
+	nTotalArea += w * h;
+}
+
+CRectangle:: ~ CRectangle() {
+	nTotalNumber--;
+	nTotalArea -= w * h;
+}
+
+void CRectangle::PrintTotal() {
+	cout << nTotalNumber << "," << nTotalArea << endl;
+}
+
+int CRectangle::nTotalNumber = 0;
+int CRectangle::nTotalArea = 0;
+//必须在定义类的文件中对静态成员变量进行一次说明或初始化。否则编译能通过，链接不能通过
+
+int main() {
+	CRectangle r1(3, 3), r2(2, 2);
+	CRectangle::PrintTotal();
+	r1.PrintTotal();
+	return 0;
+}
+
+注意事项：
+在静态成员函数中，不能访问非静态成员变量，也不能调用非静态成员函数
+
+
+成员对象和封闭类
+有成员对象的叫封闭类
+
+class CTyre {
+    private :
+        int radius;
+        int width;
+    public :
+        CTyre(int r, int w) : radius(r), width(w) {}
+};
+class CEngine {};
+
+class CCar {
+    private :
+        int price;
+        CTyre tyre;
+        CEngine engine;
+    public :
+        CCar(int p, int tr, int tw);
+};
+
+CCar::CCar(int p, int tr, int tw):price(p), tyre(tr, tw) {}
+
+int main() {
+    CCar(20000, 17, 225);
+    return 0;
+}
+
+若 CCar 类不定义构造函数，则
+	CCar car;
+会编译出错，因为编译器不明白 car.tyre 该如何初始化。car.engine 的初始化没问题，用默认构造函数即可
+任何生成封闭类对象的语句，都要让编译器明白，对象中的成员对象，是如何初始化的
+具体做法是：通过封闭类的构造函数的初始化列表
+
+封闭类对象生成时，先执行所有成员对象的构造函数，然后才执行封闭类自己的构造函数
+当封闭类对象消亡时，先执行封闭类的析构函数，然后再执行成员对象的析构函数
+
+例
+class CTyre {
+    public :
+        CTyre() {
+            cout << "CTyre contructor" << endl;
+        }
+        ~CTyre() {
+            cout << "CTyre destructor" << endl;
+        }
+};
+
+class CEngine {
+    public :
+        CEngine() {
+            cout << "CEngine Contructor" << endl;
+        }
+        ~CEngine() {
+            cout << "CEngine destructor" << endl;
+        }
+};
+
+class CCar {
+    private :
+        CEngine engine;
+        CTyre tyre;
+    public :
+        CCar() {
+            cout << "CCar contructor" << endl;
+        }
+        ~CCar() {
+            cout << "CCar destructor" << endl;
+        }
+};
+
+int main() {
+    CCar car;
+    return 0;
+}
+
+输出：
+CEngine Contructor
+CTyre contructor
+CCar contructor
+CCar destructor
+CTyre destructor
+CEngine destructor
+
+封闭类的复制构造函数：
+class A {
+    public :
+        A() { cout << "default" << endl; }
+        A(A & a) { cout << "copy" << endl; }
+};
+class B { A a; };
+int main() {
+    B b1, b2(b1);
+    return 0;
+}
+
+输出：
+default
+copy
+说明b2.a是用类 A 的复制构造函数初始化的。而且调用复制构造函数时的实参就是 b1.a
+
+
+
+常量对象、常量函数
+如果不希望某个对象的值被改变，则定义该对象的时候可以在前面加 const 关键字
+
+class Demo {
+	private :
+		int value;
+	public :
+		void SetValue() {}
+};
+const Demo Obj;
+
+在类的成员函数说明后面加 const 关键字，则该成员函数称为常量成员函数
+常量成员函数执行期间不应该修改其所作用的对象，因此，在常量成员函数中不能修改成员变量的值（静态成员变量除外），也不能调用同类的非常量成员函数（静态成员函数除外）
+
+常量成员函数
+class Sample {
+    public :
+        int value;
+        void GetValue() const;
+        void func() {}
+        Sample() {}
+};
+
+void Sample::GetValue() const {}
+int main() {
+    const Sample o;
+    o.GetValue();
+    return 0;
+}
+
+常量成员函数的重载
+两个成员函数，名字和参数表都一样，但是一个是 const ，一个不是，算重载
+
+class CTest {
+    private :
+        int n;
+    public :
+        CTest() { n = 1; }
+        int GetValue() const { return n; }
+        int GetValue() { return 2 * n; }
+};
+
+int main() {
+    const CTest objTest1;
+    CTest objTest2;
+    cout << objTest1.GetValue() << "," << objTest2.GetValue() << endl;
+    return 0;
+}
+输出：
+1,2
+
+可以用对象的引用作为参数
+如：
+class Sample {
+};
+void PrintfObj(const Sample & o) {}	//不会引发复制构造函数的调用，节省时间开销
+
+
+
+友元：
+友元分为友元函数和友元类两种
+1) 友元函数：一个类的友元函数可以访问该类的私有成员
+
+class CCar;
+class CDriver {
+    public :
+        void ModifyCar(CCar * pCar);
+};
+class CCar {
+    private :
+        int price;
+        friend int MostExpensiveCar(CCar cars[], int total);    //声明友元
+        friend void CDriver::ModifyCar(CCar *pCar);             //声明友元
+};
+
+void CDriver::ModifyCar(CCar * pCar) {
+    pCar->price += 1000;	//汽车改装后价格增加
+}
+
+int MostExpensiveCar(CCar cars[], int total) {			//求最贵汽车的价格
+    int tmpMax = -1;
+    for(int i = 0; i < total; i++)
+        if(cars[i].price > tmpMax)
+            tmpMax = cars[i].price;
+    return tmpMax;
+}
+
+int main() {
+    return 0;
+}
+
+可以将一个类的成员函数（包括构造、析构函数）说明为另一个类的友元
+class B {
+	public :
+		void function();
+};
+
+class A {
+	friend void B::function();
+};
+
+友元类：如果 A 是 B 的友元类，那么 A 的成员函数可以访问 B 的私有成员
+
+class CCar {
+    private :
+        int price;
+        friend class CDriver;   //声明 CDriver 为友元类
+};
+class CDriver {
+    public :
+        CCar myCar;
+        void ModifyCar() {		//改装汽车
+            myCar.price += 1000;	//因 CDriver 是 CCar 的友元类，所以此处可以访问其私有成员
+        }
+};
+int main() {
+    return 0;
+}
+友元类之间的关系不能传递，不能继承
+
+
+
+运算符重载：
+运算符重载的目的是：扩展 C++ 中提供的运算符的适用范围，使之能作用于对象
+
+运算符重载的实质是函数重载
+
+可以重载为普通函数，也可以重载为成员函数
+
+把含运算符的表达式转换成对运算符函数的调用
+
+把运算符的操作数转化成运算符函数的参数
+
+运算符被多次重载时，根据实参的类型决定调用哪个运算符函数
+
+运算符重载的形式：
+class Complex {
+public :
+	double real, imag;
+	Complex(double r = 0.0, double i = 0.0): real(r), imag(i) {}
+	Complex operator-(const Complex & c);
+};
+
+Complex operator+(const Complex & a, const Complex & b) {
+	return Complex(a.real + b.real, a.imag + b.imag);
+}
+
+Complex Complex::operator-(const Complex & c) {
+	return Complex(real - c.real, imag - c.imag);
+}
+
+int main() {
+	Complex a(4, 4), b(1, 1), c;
+	c = a + b;		//等价于 c = operator+(a, b);
+	cout << c.real << "," << c.imag << endl;
+	cout << (a - b).real << "," << (a - b).imag << endl;
+	//a - b等价于 a.operator-(b)
+	return 0;
+}
+
+输出：
+5,5
+3,3
+
+重载为成员函数时，参数个数为运算符目数减一
+重载为普通函数时，参数个数为运算符数目
+
+
+赋值运算符 '=' 重载
+赋值运算符 '=' 只能重载为成员函数
+class String {
+private :
+	char * str; 
+public :
+	String():str(new char[1]) { str[0] = 0; }
+	const char * c_str() { return str; };
+	String & operator = (const char * s);	//要修改 this 的值，所以返回值要用 String &
+	~String() { delete[] str; }
+};
+
+String & String::operator = (const char * s) {
+	//重载 "=" 以使得 obj = "hello" 能够成立
+	delete[] str;
+	str = new char[strlen(s) + 1];
+	strcpy(str, s);
+	return *this;
+}
+
+int main() {
+	String s;
+	s = "Good Luck,";	//等价于 s.operator = ("Good Luck,");
+	cout << s.c_str() << endl;
+	// String s2 = "hello!";	//初始化语句，要是不注释掉就会出错，
+	s = "C++!";	//等价于 s.operator = ("C++!");
+	cout << s.c_str() << endl;
+	return 0;
+}
+输出：
+Good Luck,
+C++！
+
+浅拷贝和深拷贝
+如果不定义自己的赋值运算符，那么 S1 = S2 实际上导致 S1.str 和 S2.str 指向同一个地方，如果 S1 对象消亡，析构函数将释放 S1.str 指向的空间，则 S2 消亡时还要释放一次，不妥。另外，如果执行 S1 = "other"；会导致 S2.str 指向的地方被 delete 
+因此要在 class String 里添加成员函数：
+String & operator = (const String & s) {
+	if(this == & s)		//避免 s = s 的情况发生
+		return * this;
+	delete[] str;
+	str = new char[strlen(s.str) + 1];
+	strcpy(str, s.str);
+	return *this;
+}
+
+对运算符进行重载的时候，好的风格是应该尽量保留运算符原本的特性
+考虑：a = b = c;	//如果是 void 类型，则这种情况不成立
+和 (a = b) = c;		//C++ 中赋值运算符的返回值是等号左边变量的引用，重载运算符也应该维持这种性质
+分别等价于：
+a.operator = (b.operator = (c));
+(a.operator = (b)).operator = (c);
+
+为 String 类编写复制构造函数的时候，会面临和 = 相同的问题，用同样的方法处理
+String(String & s) {
+	str = new char[strlen(s.str) + 1];
+	strcpy(str, s.str);
+}
+当前对象刚刚生成，不可能和现有对象一样，因此不用判断
+
+
+
+运算符重载为友元函数
+一般情况下，将运算符重载为类的成员函数，是较好的选择
+但有时，重载为成员函数不能满足使用要求，重载为普通函数，又不能访问类的私有成员，所以需要将运算符重载为友元
+class Complex {
+	double real, imag;
+public :
+	Complex(double r, double i):real(r), imag(i) {}
+	Complex operator+(double r) {		//c = c + 5;有定义，相当于c = c.operator+(5);
+		return Complex(real + r, imag);
+	}
+	friend Complex operator + (double r, const Complex & c);	//解决全局函数访问私有成员的问题
+}
+
+Complex operator + (double r, const Complex & c){
+	//能解释 5 + c
+	return Complex(c.real + r, c.imag);
+}
+
+运算符重载实例：可变长整形数组
+class Array {
+	int size;		//数组元素的个数
+	int * ptr;		//指向动态分配的数组
+public:
+	Array(int s = 0);			// s 代表数组元素的个数
+	Array(const Array & a);
+	~Array();
+	void push_back(int v);
+	Array & operator=(const Array & a);
+	int length() { return size; }
+	int & operator[](int i) {
+		//用以支持根据下标访问数组元素，如 a[i] = 4 和 n = a[i]这样的语句
+		return ptr[i];
+	}
+};
+
+Array::Array(int s):size(s) {
+	if(s == 0)
+		ptr = nullptr;
+	ptr = new int[s];
+}
+
+Array::Array(const Array & a) {
+	if(!a.ptr) {
+		ptr = nullptr;
+		size = 0;
+		return;
+	}
+	ptr = new int[a.size];
+	memcpy(ptr, a.ptr, sizeof(int) * a.size);
+	size = a.size;
+}
+
+Array::~Array() {
+	if(ptr)
+		delete [] ptr;
+}
+
+void Array::push_back(int v) {
+	if(ptr) {
+		int * tmpptr = new int[size + 1];			//重新分配空间
+		memcpy(tmpptr, ptr, sizeof(int) * size);	//复制原数组内容
+		delete [] ptr;
+		ptr = tmpptr;
+	}
+	else											//数组本来是空的
+		ptr = new int[1];
+	ptr[size++] = v;								//加入新的数组元素
+}
+
+Array & Array::operator=(const Array & a) {	//赋值号的作用是使 " = "左边对象中存放的数组，大小和内容都和右边的对象一样
+	if(ptr == a.ptr)	//防止 a = a 这样的赋值导致出错
+		return * this;
+	if(a.ptr == nullptr) {	//如果 a 里面的数组是空的
+		if(ptr)
+			delete [] ptr;
+		ptr = nullptr;
+		size = 0;
+		return * this;
+	}
+	if(size < a.size) {		//如果原有空间够大，就不用分配新的空间
+		if(ptr)
+			delete [] ptr;
+		ptr = new int[a.size];
+	}
+	memcpy(ptr, a.ptr, sizeof(int) * a.size);
+	size = a.size;
+	return * this;
+}
+
+int main() {
+	Array a;				//开始的数组是空的
+	for(int i = 0; i < 5; i++)
+		a.push_back(i);
+	Array a2, a3;
+	a2 = a;
+	for(int i = 0; i < a.length(); i++)
+		cout << a2[i] << " ";
+	a2 = a3;				//a2 是空的
+	for(int i = 0; i < a2.length(); i++)	//a2.length()返回0
+		cout << a2[i] << " ";
+	cout << endl;
+	a[3] = 100;
+	Array a4(a);
+	for(int i = 0; i < a4.length(); i++)
+		cout << a4[i] << " ";
+	return 0;
+}
+
+[]是双目运算符，两个操作数，一个在里面，一个在外面。表达式 a[i] 等价于 a.operator[](i)。按照[]原有的特性，a[i] 是应该能够作为左值使用的，所以 operator[] 这个函数应该返回引用
+
+
+流插入运算符和流提取运算符
+class Complex {
+	double real, imag;
+public:
+	Complex(double r = 0, double i = 0):real(r), imag(i) {}
+	friend ostream & operator<<(ostream & os, const Complex & c);
+	friend istream & operator>>(istream & is, Complex &c);
+};
+
+ostream & operator<<(ostream & os, const Complex & c) {		//参数 os 只能是 ostream 的引用，而不能是 ostream 对象，因为 ostream 的复制构造函数是私有的，没有办法生成 ostream 对象。
+	os << c.real << "+" << c.imag << "i";
+	return os;
+}
+
+istream & operator>>(istream & is, Complex &c) {
+	string s;
+	is >> s;		//将 "a+bi" 作为字符串读入，"a+bi"中间不能有空格
+	int pos = s.find("+", 0);
+	string sTmp = s.substr(0, pos);
+	c.real = atof(sTmp.c_str());
+	sTmp = s.substr(pos + 1, s.length() - pos -2);
+	c.imag = atof(sTmp.c_str());
+	return is;
+}
+
+int main() {
+	Complex c;
+	int n;
+	cin >> c >> n;
+	cout << c << "," << n;
+	return 0;
+}
+输入：
+13.2+133i 87
+输出：
+13.2+133i,87
+
+因为没有办法修改 ostream 类和 istream 类，所以只能将 "<<" 和 ">>" 重载为全局函数的形式。由于这两个函数需要访问 Complex 类的私有成员，因此在 Complex 类的定义中将ta'men声明为友元
+
+
+类型转换运算符的重载：
+C++ 中，类型的名字（包括类的名字）本身也是一种运算符，即强制类型转换运算符
+class Complex {
+	double real, imag;
+public:
+	Complex(double r = 0, double i = 0):real(r), imag(i) {};
+	operator double() { return real; }	//重载强制类型转换运算符 double
+};
+
+int main() {
+	Complex c(1.2, 3.4);
+	cout << (double)c << endl;	//输出 1.2
+	double n = 2 + c;	//等价于 double n = 2 + c.operator double()
+	cout << n;			//输出 3.2
+}
+输出：
+1.2
+3.2
+
+若类中重载了 double 运算符，在任何可以出现 double 的地方，如果出现的是一个对象，对象会被自动转换为 double 类型
+
+
+自增、自减运算符的重载
+自增运算符++、自减运算符--有前置/后置之分，为了区分所重载的是前置运算符还是后置运算符，C++ 规定：
+
+前置运算符作为一元运算符重载
+重载为成员函数：
+T & operator++();
+T & operator--();
+重载为全局函数：
+T1 & operator++(T2);
+T1 & operator--(T2);
+
+后置运算符作为二元运算符重载，多写一个没用的参数：
+重载为成员函数：
+T operator++(int);
+T operator--(int);
+重载为全局函数：
+T1 operator++(T2, int);
+T1 operator--(T2, int);
+
+在没有后置运算符重载而有前置重载的情况下，在一些编译器中也会调用前置重载，有的编译器则会出错
+
+class CDemo {
+	int n;
+public:
+	CDemo(int i = 0):n(i) {}
+	CDemo & operator++();		//用于前置形式
+	CDemo operator++(int);		//用于后置形式
+	operator int() { return n; }
+	friend CDemo & operator--(CDemo &);
+	friend CDemo operator--(CDemo &, int);
+};
+
+CDemo & CDemo::operator++() {	//前置++
+	++n;
+	return *this;	
+}	//++s 即为：s.operator++();
+
+CDemo CDemo::operator++(int) {	//C++ 中后置运算符并没有返回操作变量的引用，其返回值是一个临时变量
+	//后置 ++
+	CDemo tmp(*this);	//记录修改前的对象
+	n++;
+	return tmp;			//返回修改前的对象
+}	//s++ 即为：s.operator++(0);
+
+CDemo & operator--(CDemo & d) {
+	//前置--
+	d.n--;
+	return d;
+}	//--s 即为：operator--(s);
+
+CDemo operator--(CDemo & d, int) {
+	//后置--
+	CDemo tmp(d);
+	d.n--;
+	return tmp;
+}	//s-- 即为：operator--(s, 0);
+
+int main() {
+	CDemo d(5);
+	cout << d++ << ",";		//等价于 d.operator++(0);
+	cout << d << ",";
+	cout << ++d << ",";		//等价于 d.operatro++();
+	cout << d << endl;
+	cout << d-- << ",";		//等价于 operator--(d, 0);
+	cout << d << ",";
+	cout << --d << ",";		//等价于 operator--(d);
+	cout << d << endl;
+	return 0;
+}
+输出：
+5,6,7,7
+7,6,5,5
+
+
+运算符重载的注意事项：
+1. C++ 不允许定义新的运算符
+2. 重载后运算符的含义应该符合日常习惯
+3. 运算符重载不改变运算符的优先级
+4. 一下运算符不能被重载："."、".*"、"::"、"?:"、"sizeof"
+5. 重载运算符 ()、[]、-> 或者赋值运算符 = 时，运算符重载函数必须声明为类的成员函数
+
+
+
+继承和派生：
+派生类是通过对基类进行修改和扩充得到的。在派生类中，可以扩充新的成员变量和成员函数
+派生类一经定义后，可以独立使用，不依赖于基类
+
+派生类拥有基类的全部成员函数和成员变量
+派生类的各个成员函数中，不能访问基类的 private 成员
+
+派生类写法：
+class 派生类名 : public 基类名 {
+	
+}
+
+派生类对象的体积，等于基类对象的体积，加上派生类对象自己的成员变量的体积
+在派生类对象中，包含着基类对象，而且基类对象的存储位置位于派生类对象新增的成员变量之前
+
+有两个类的简单学生管理程序：
+class CStudent {
+private:
+	string name;
+	string id;			//学号
+	char gender;		//性别，'F'代表女，'M'代表男
+	int age;
+
+public:
+	void PrintInfo();
+	void SetInfo(const string & name_, const string & id_, int age_, char gender_);
+	string Getname() { return name; }
+};
+
+class CUndergraduateStrudent : public CStudent {	//本科生类，继承了 CStudent 类
+private:
+	string department;								//学生所属的系的名称
+public:
+	void QulifiedForBaoYan() {
+		cout << "qulified for baoyan" << endl;		//给予保研名额
+	}
+	void PrintInfo() {
+		CStudent::PrintInfo();						//调用基类的 PrintInfo
+		cout << "Department:" << department << endl;
+	}
+	void SetInfo(const string & name_, const string & id_, int age_, char gender_, const string & department_) {
+		CStudent::SetInfo(name_, id_, age_, gender_);	//调用基类的 SetInfo
+		department = department_;
+	}
+};
+
+void CStudent::PrintInfo() {
+	cout << "Name:" << name << endl;
+	cout << "ID:" << id << endl;
+	cout << "Age:" << age << endl;
+	cout << "Gender:" << gender << endl;
+}
+
+void CStudent::SetInfo(const string & name_, const string & id_, int age_, char gender_) {
+	name = name_;
+	id = id_;
+	age = age_;
+	gender = gender_;
+}
+
+int main() {
+	CStudent s1;
+	CUndergraduateStrudent s2;
+	s2.SetInfo("Harry Potter", "118829212", 19, 'M', "Computer Science");
+	cout << s2.Getname() << " ";
+	s2.QulifiedForBaoYan();
+	s2.PrintInfo();
+	cout << "sizeof(string) = " << sizeof(string) << endl;
+	cout << "sizeof(CSturdent) = " << sizeof(CStudent) << endl;
+	cout << "sizeof(CUndergraduateStudent) = " << sizeof(CUndergraduateStrudent) << endl;
+	return 0;
+}
+
+输出结果：
+Harry Potter qulified for baoyan
+Name:Harry Potter
+ID:118829212
+Age:19
+Gender:M
+Department:Computer Science
+sizeof(string) = 32
+sizeof(CSturdent) = 72
+sizeof(CUndergraduateStudent) = 104
+
+
+类之间的两种关系
+继承：“是”关系
+-基类 A， B 是基类 A 的派生
+-逻辑上要求：“一个 B 对象也是一个 A 对象”
+
+复合：“有”关系
+-类 C 中“有”成员变量 k，k是类 D 的对象，则 C 和 D 是复合关系
+-一般逻辑上要求：“D 对象是 C 对象的固有属性或组成部分”
+
+“点”类和“圆”类：
+class CPoint {
+	double x, y;
+};
+
+class CCircle {
+	double r;
+	CPoint center;
+};
+
+人和狗的关系：
+class CMaster;
+
+class CDog {
+	CMaster * pm;
+};
+class CMaster {
+	CDog * dogs[10];
+};
+
+
+覆盖
+派生类可以定义一个和基类成员同名的成员，这叫覆盖。在派生类中访问这类成员时，缺省的情况时访问派生类中定义的成员。要在派生类中访问由基类定义的同名成员时，要使用作用域符号::
+
+class base {
+	int j;
+public:
+	int i;
+	void func();
+};
+
+class derived:public base {
+public:
+	int i;
+	void access();
+	void func();
+};
+
+void derived::access() {
+	j = 5;			//error
+	i = 5;			//引用的是派生类的i
+	base::i = 5;	//引用的是基类的i
+	func();			//派生类的
+	base::func();	//基类的
+}
+
+derived obj;
+obj.i = 1;
+obj.base::j = 1;
+
+派生类和基类有同名函数很常见，但一般不会在派生类中定义和基类同名的成员变量
+
+
+类的保护成员
+protected 访问范围说明符
+基类的保护成员可以在派生类的成员函数中被访问
+在派生类的成员函数中，只能访问成员函数所作用的那个对象（即 this 指针所指向的对象）的基类保护成员，不能访问其它同类对象的基类保护成员
+
+class CBase {
+private:
+	int nPrivate;	//私有成员
+public:
+	int nPublic;	//公有成员
+protected:
+	int nProtected	//保护成员
+};
+
+class CDerived:public CBase {
+	void AccessBase() {
+		nPublic = 1;	//OK
+		nPrivate = 1;	//错，不能访问基类私有成员
+		CBase f;
+		f.nProtected = 1;	//错，f不是函数所作用的对象
+	}
+};
+
+int main() {
+	CBase b;
+	CDerived d;
+	int n = b.nProtected;	//错，不在派生类成员函数内，不能访问基类保护成员
+	n = d.nPrivate;		//错，此处不能访问 d 的私有成员
+	int m = d.nPublic;	//OK
+	return 0;
+}
+
+在基类中，更常见的做法是将需要隐藏的成员说明为保护成员而非私有成员
+
+
+派生类的构造函数
+class Bug {
+private:
+	int nLegs;
+	int nColor;
+public:
+	int nType;
+	Bug(int legs, int color);
+	~Bug() {
+		cout << "Bug Destructor" << endl;
+	}
+	void PrintBug() {
+		cout << nLegs << "," << nColor << endl;
+	}
+};
+
+class FlyBug:public Bug {
+	int nWings;
+public:
+	//FlyBug() {} 若不注释掉会编译出错，因为 Bug 类没有无参构造函数
+	FlyBug(int legs, int color, int wings);
+	~FlyBug() {
+		cout << "FlyBug Destructor" << endl;
+	}
+};
+
+Bug::Bug(int legs, int color):nLegs(legs), nColor(color) {
+	cout << "Bug Constructor" << endl;
+}
+
+FlyBug::FlyBug(int legs, int color, int wings):Bug(legs, color), nWings(wings) {
+	cout << "FlyBug Constructor" << endl;
+}
+
+int main() {
+	FlyBug fb(2, 3, 4);
+	fb.PrintBug();
+	return 0;
+}
+
+输出结果：
+Bug Constructor
+FlyBug Constructor
+2,3
+FlyBug Destructor
+Bug Destructor
+
+在创建派生类的对象时，需要调用基类的构造函数：初始化派生类对象中从基类继承的成员。在执行一个派生类的构造函数之前，总是先执行基类的构造函数
+
+调用基类构造函数的两种方式
+显式方式：在派生类的构造函数中，为基类的构造函数提供参数
+隐式方式：在派生类的构造函数中，省略基类构造函数时，派生类的构造函数则自动调用基类的默认构造函数
+
+派生类的析构函数被执行时，执行完派生类的构造函数后，自动调用基类的析构函数
+
+包含成员对象的派生类的构造函数写法
+class Bug {
+private:
+	int nLegs;
+	int nColor;
+public:
+	int nType;
+	Bug(int legs, int color);
+	void PrintBug() {}
+};
+
+class Skill {
+public :
+	Skill(int n) {}
+};
+
+class FlyBug:public Bug {
+	int nWings;
+	Skill sk1, sk2;
+public:
+	FlyBug(int legs, int color, int wings);
+};
+
+FlyBug::FlyBug(int legs, int color, int wings):
+	Bug(legs, color), sk1(5), sk2(color), nWings(wings) {}
+
+
+public继承的赋值兼容规则
+class base {};
+class derived {};
+base b;
+derived d;
+
+派生类的对象可以赋值给基类对象
+b = d;
+派生类对象可以初始化基类引用
+base & br = d;
+派生类对象的地址可以赋值给基类指针
+base * pb = &d;
+
+如果派生方式是 private 或 protected，则上述三条不成立
+
+
+直接基类和间接基类
+在声明派生类时，只需要列出它的直接基类
+
+派生类沿着类的层次自动向上继承它的间接基类
+
+派生类的成员包括
+派生类自己定义的成员
+直接基类中的所有成员
+所有间接基类的全部成员
+
+class Base {
+public:
+	int n;
+	Base(int i):n(i) {
+		cout << "Base " << n << " constructed" << endl;
+	}
+	~Base() {
+		cout << "Base " << n << " destructed" << endl;
+	}
+};
+
+class Derived:public Base {
+public:
+	Derived(int i):Base(i) {
+		cout << "Derived constructed" << endl;
+	}
+	~Derived() {
+		cout << "Derived destructed" << endl;
+	}
+};
+
+class MoreDerived:public Derived {
+public:
+	MoreDerived():Derived(4) {
+		cout << "More Derived constructed" << endl;
+	}
+	~MoreDerived() {
+		cout << "More Derived destructed" << endl;
+	}
+};
+
+int main() {
+	MoreDerived Obj;
+	return 0;
+}
+
+输出结果：
+Base 4 constructed
+Derived constructed
+More Derived constructed
+More Derived destructed
+Derived destructed
+Base 4 destructed
+
+
+
+虚函数与多态
+虚函数
+在类的定义中，前面有 virtual 关键字的成员函数就是虚函数
+class base {
+	virtual int get();
+};
+int base::get() {}
+
+virtual 关键字只用在类定义里的函数声明中，写函数体时不用
+构造函数和静态成员函数不能是虚函数
+
+形成多态必须具备三个条件：
+1.必须存在继承关系；
+2.继承关系必须有同名虚函数（其中虚函数是在基类中使用关键字Virtual声明的函数，在派生类中重新定义基类中定义的虚函数时，会告诉编译器不要静态链接到该函数）；
+3.存在基类类型的指针或者引用，通过该指针或引用调用虚函数；
+
+多态的表现形式一
+派生类的指针可以赋给基类指针
+通过基类指针调用基类和派生类中的同名虚函数时：
+1.若该指针指向一个基类的对象，那么被调用是基类的虚函数
+2.若该指针指向一个派生类的对象，那么被调用的是派生类的虚函数
+这种机制就叫做“多态”
+class CBase {
+public:
+	virtual void SomeVirtualFunction() {}
+};
+
+class CDerived:public CBase {
+public:
+	virtual void SomeVirtualFunction() {}
+};
+
+int main() {
+	CDerived ODerived;
+	CBase * p = & ODerived;
+	p->SomeVirtualFunction();	//调用哪个虚函数取决于 p 指向哪种类型的对象
+	//该语句执行 CDerived 类的 SomeVirtualFunction
+	return 0;
+}
+
+多态的表现形式二
+派生类的对象可以赋给基类的引用
+通过基类引用调用基类和派生类中的同名虚函数时：
+1.若该引用引用的是一个基类对象，那么被调用是基类的虚函数
+2.若该引用引用的是一个派生类对象，那么被调用的是派生类的虚函数
+这种机制也叫“多态”
+
+多态的简单示例
+class CBase {
+public:
+	virtual void SomeVirtualFunction() {}
+};
+
+class CDerived:public CBase {
+public:
+	virtual void SomeVirtualFunction() {}
+};
+
+int main() {
+	CDerived ODerived;
+	CBase & r = ODerived;
+	r.SomeVirtualFunction();	//调用哪个虚函数取决于 r 引用哪种类型的对象
+	//此语句调用的是派生类的 SomeVirtualFunction
+	return 0;
+}
+
+class A {
+public:
+	virtual void Print() {
+		cout << "A::Print" << endl;
+	}
+};
+
+class B:public A {
+public:
+	virtual void Print() {
+		cout << "B::Print" << endl;
+	}
+};
+
+class D:public A {
+public:
+	virtual void Print() {
+		cout << "D::Print" << endl;
+	}
+};
+
+class E:public B {
+	virtual void Print() {
+		cout << "E::Print" << endl;
+	}
+};
+
+int main() {
+	A a; B b; D d; E e;
+	A * pa = & a;
+	B * pb = & b;
+	pa->Print();
+	pa = pb;
+	pa->Print();
+	pa = & d;
+	pa->Print();
+	pa = & e;
+	pa->Print();
+	return 0;
+}
+
+输出结果：
+A::Print
+B::Print
+D::Print
+E::Print
+
+在面向对象的程序设计中使用多态，能够增强程序的可扩充性，即程序需要修改或增加功能的时候，需要改动和增加的代码较少
+
+
+多态实例：魔法门之英雄无敌
+基本思路：
+设置基类 CCreature，并且使 CDragon，CWolf 等其他类都从 CCreature 派生出来
+
+非多态的实现方法
+class CCreature {
+protected:
+	int nPower;		//代表攻击力
+	int nLifeValue	//代表生命值
+};
+
+class CDragon:public CCreature {
+public:
+	void Attack(CWolf * pWolf) {
+		.....表现攻击动作的代码
+		pWolf->Hurted(nPower);
+		pWolf->FightBack(this);
+	}
+	void Attack(CGhost * pGhost) {
+		.....表现攻击动作的代码
+		pGhost->Hurted(nPower);
+		pGhost->FightBack(this);
+	}
+	void Hurted(int nPower) {
+		.....表现受伤动作的代码
+		nLifeValue -= nPower;
+	}
+	void FightBack(CGhost * pGhost) {
+		.....表现反击动作的代码
+		pWolf->Hurted(nPower / 2);
+	}
+	void FightBack(CGhost * pGhost) {
+		.....表现反击动作的代码
+		pGhost->Hurted(nPower / 2);
+	}
+}
+
+有n种怪物，CDragon 类中就会有n个 Attack 成员函数，以及n个 FightBack 成员函数。对于其他类也如此
+
+如果游戏版本升级，增加了新的怪物雷鸟 CThunderBird，则程序改动较大
+
+所有的类都需要增加两个成员函数：
+	void Attack(CThunderBird * pThunderBird);
+	void FightBack(CThunderBird * pThunderBird);
+怪物种类多的时候，工作量会很大
+
+多态的实现方法
+//基类 CCreature
+class CCreature {
+protected:
+	int m_nLifeValue, m_nPower;
+public:
+	virtual void Attack(CCreature * p) {}
+	virtual void Hurted(int nPower) {}
+	virtual void FightBack(CCreature * pCreature) {}
+};
+基类只有一个 Attack 成员函数；也只有一个 FightBack 成员函数；所有 CCreature 的派生类也是这样
+//派生类 CDragon
+class CDragon:public CCreature {
+public:
+	virtual void Attack(CCreature * p);
+	virtual void Hurted(int nPower);
+	virtual void FightBack(CCreature * pCreature);
+};
+
+void CDragon::Attack(CCreature * p) {
+	....表现攻击动作的代码
+	p->Hurted(m_nPower);	//多态
+	p->FightBack(this);		//多态
+}
+
+void CDragon::Hurted(int nPower) {
+	.....表现受伤动作的代码
+	m_nLifeValue -= nPower;
+}
+
+void CDragon::FightBack(CCreature * p) {
+	.....表现反击动作的代码
+	p->Hurted(m_nPower / 2);	//多态
+}
+
+如果游戏版本升级，增加了新的怪物雷鸟 CThunderBird，只需要编写新类 CThunderBird，不需要在已有的类里专门为新怪物增加：
+	void Attack(CThunderBird * pThunderBird);
+	void FightBack(CThunderBird * pThunderBird);
+成员函数，已有的类可以原封不动
+
+原理
+CDragon Dragon;
+CWolf Wolf;
+CGhost Ghost;
+CThunderBird Bird;
+Dragon.Attack(& Wolf);	//(1)
+Dragon.Attack(& Ghost);	//(2)
+Dragon.Attack(& Bird);	//(3)
+根据多态的规则，上面的(1),(2),(3)进入到 CDragon::Attack 函数后，能分别调用：
+CWolf::Hurted;
+CGhost::Hurted
+CBird::Hurted
+
+
+几何形体处理程序
+输入若干个几何形体的参数，要求按面积排序输出，输出时指明形状
+Input:
+第一行是几何形体数目n（不超过100），下面有n行，每行以一个字母c开头
+若 c 是 'R'，则代表一个矩形，本行后面跟着两个整数，分别是矩形的宽和高
+若 c 是 'C'，则代表一个圆，本行后面跟着一个整数代表其半径
+若 c 是 'T'，则代表一个三角形，本行后面跟着三个整数，代表三条边的长度
+Sample Input
+3
+R 3 5
+C 9
+T 3 4 5
+Sample Output
+Triangle:6
+Rectangle:15
+Circle:254.34
+
+#include <iostream>
+#include <cmath>
+#include <algorithm>
+using namespace std;
+
+class CShape {
+public:
+	virtual double Area() = 0;			//纯虚函数
+	virtual void PrintInfo() = 0;
+};
+
+class CRectangle:public CShape {
+public:
+	int w, h;
+	virtual double Area();
+	virtual void PrintInfo();
+};
+
+class CCircle:public CShape {
+public:
+	int r;
+	virtual double Area();
+	virtual void PrintInfo();
+};
+
+class CTriangle:public CShape {
+public:
+	int a, b, c;
+	virtual double Area();
+	virtual void PrintInfo();
+};
+
+double CRectangle::Area() {
+	return w * h;
+}
+
+void CRectangle::PrintInfo() {
+	cout << "Rectangle:" << Area() << endl;
+}
+
+double CCircle::Area() {
+	return 3.14 * r * r;
+}
+
+void CCircle::PrintInfo() {
+	cout << "Circle:" << Area() << endl;
+}
+
+double CTriangle::Area() {
+	double p = (a + b + c) / 2.0;
+	return sqrt(p * (p - a) * (p - b) * (p - c));
+}
+
+void CTriangle::PrintInfo() {
+	cout << "Triangle:" << Area() << endl;
+}
+
+CShape * pShape[100];	//常用基类指针数组存放不同种类的信息
+
+bool cmp(CShape * a, CShape * b) {
+	return a->Area() < b->Area();
+}
+
+int main() {
+	int n;
+	CRectangle * pr;
+	CCircle * pc;
+	CTriangle * pt;
+	cin >> n;
+	for(int i = 0; i < n; i++) {
+		char c;
+		cin >> c;
+		switch(c) {
+			case 'R':
+				pr = new CRectangle();	//此处不能用 pShape[i] 指向新分配的区域，因为 CShape 类型中没有 w, h 变量
+				cin >> pr->w >> pr->h;
+				pShape[i] = pr;			//将派生类指针赋值给基类
+				break;
+			case 'C':
+				pc = new CCircle();
+				cin >> pc->r;
+				pShape[i] = pc;
+				break;
+			case 'T':
+				pt = new CTriangle();
+				cin >> pt->a >> pt->b >> pt->c;
+				pShape[i] = pt;
+				break;
+		}
+	}
+	sort(pShape, pShape + n, cmp);
+	for(int i = 0; i < n; i++)
+		pShape[i]->PrintInfo();
+	return 0;
+}
+
+输出结果：
+Rectangle:4
+Triangle:6
+Rectangle:15
+Circle:254.34
+
+如果添加新的几何形体，比如五边形，只需要从 CShape 派生出 CPentagon ，以及在 main 中的 switch 语句中增加一个 case ，其余部分不变
+
+
+多态的又一例子
+class Base {
+public:
+	void fun1() { fun2(); }
+	virtual void fun2() { cout << "Base::fun2()" << endl; }
+};
+
+class Derived:public Base {
+public:
+	virtual void fun2() { cout << "Derived::fun2()" << endl; }
+};
+
+int main() {
+	Derived d;
+	Base * pBase = & d;
+	pBase->fun1();
+	return 0;
+}
+
+输出结果：
+Derived::fun2()
+
+在非构造函数，非析构函数的成员函数中调用虚函数，是多态
+
+
+在构造函数和析构函数中调用虚函数，不是多态。编译时即可确定，调用的函数是自己的类或基类中定义的函数，不会等到运行时才决定调用自己的还是派生类的函数
+
+class myclass {
+public:
+	virtual void hello() { cout << "hello from myclass" << endl; }
+	virtual void bye() { cout << "bye from myclass" << endl; }
+};
+
+class son:public myclass {
+public:
+	void hello() { cout << "hello from son" << endl; }
+	son() { hello(); }
+	~son() { bye(); }
+};		//派生类中和基类中虚函数同名同参数表的函数，不加 virtual 也自动成为虚函数
+
+class grandson:public son {
+public:
+	void hello() { cout << "hello from grandson" << endl; }
+	void bye() { cout << "bye from grandson" << endl; }
+	grandson() { cout << "constructing grandson" << endl; }
+	~grandson() { cout << "destructing grandson" << endl; }
+};
+
+int main() {
+	grandson gson;
+	son * pson;
+	pson = & gson;
+	pson->hello();	//多态
+	return 0;
+}
+
+输出结果：
+hello from son
+constructing grandson
+hello from grandson
+destructing grandson
+bye from myclass
+
+
+多态的实现原理
+多态实现的关键是虚函数表
+
+每个有虚函数的类（或有虚函数的类的派生类）都有一个虚函数表，该类的任何对象中都放着虚函数表的指针。虚函数表中列出了该类的虚函数地址。用四个字节存放
+
+多态的函数调用语句被编译成一系列根据基类指针所指向的（或基类引用所引用的）对象中存放的虚函数表的地址，在虚函数表中查找虚函数地址，并调用虚函数的指令
+
+class A {
+public:
+	virtual void Func() { cout << "A::Func" << endl; }
+};
+
+class B:public A {
+public:
+	virtual void Func() { cout << "B::Func" << endl; }
+};
+
+int main() {
+	A a;
+	A * pa = new B();
+	pa->Func();
+	//64位程序指针为8字节
+	long long * p1 = (long long *) & a;
+	long long * p2 = (long long *) pa;
+	//将基类的虚函数表用派生类的虚函数表替换
+	* p2 = * p1;
+	pa->Func();
+	return 0;
+}
+
+输出结果：
+B::Func
+A::Func
+
+
+虚析构函数
+通过基类的指针删除派生类对象时，通常情况下只调用基类的析构函数
+但是，删除一个派生类的对象时，应该先调用派生类的析构函数，然后调用基类的析构函数
+
+解决办法：把基类的析构函数声明为 virtual
+派生类的析构函数可以不进行 virtual 声明
+通过基类的指针删除派生类对象时，首先调用派生类的析构函数，然后调用基类的析构函数
+
+一般来说，一个类如果定义了虚函数，则应该将析构函数也定义成虚函数。或者，一个类打算作为基类使用，也应该将析构函数定义为虚函数
+
+不允许虚函数作为构造函数
+
+class son {
+public:
+	~son() { cout << "bye from son" << endl; }
+};
+
+class grandson:public son {
+public:
+	~grandson() { cout << "bye from grandson" << endl; }
+};
+
+int main() {
+	son * pson;
+	pson = new grandson();
+	delete pson;
+	return 0;
+}
+
+输出结果：
+bye from son
+//没有执行 grandson::~grandson()
+
+class son {
+public:
+	virtual ~son() { cout << "bye from son" << endl; }
+};
+
+class grandson:public son {
+public:
+	~grandson() { cout << "bye from grandson" << endl; }
+};
+
+int main() {
+	son * pson;
+	pson = new grandson();
+	delete pson;
+	return 0;
+}
+
+输出结果：
+bye from grandson
+bye from son
+//执行 grandson::~grandson()，引起执行 son::~son()
+
+
+纯虚函数和抽象类
+纯虚函数：没有函数体的虚函数
+class A {
+private:
+	int a;
+public:
+	virtual void Print() = 0;	//纯虚函数
+	void fun() { cout << "fun"; }
+};
+
+包含纯虚函数的类叫抽象类
+抽象类只能作为基类来派生新类使用，不能创建抽象类的对象
+抽象类的指针和引用可以指向由抽象类派生出来的类的对象
+A a;	//错，A 是抽象类，不能创建对象
+A * pa;	//对，可以定义抽象类的指针和引用
+pa = new A;	//错，A 是抽象类，不能创建对象
+
+在抽象类的成员函数内可以调用纯虚函数，但是在构造函数或析构函数内部不能调用纯虚函数
+
+如果一个类从抽象类派生而来，那么当且仅当它实现了基类中的所有纯虚函数，它才能成为非抽象类
+
+class A {
+public:
+	virtual void f() = 0;	//纯虚函数
+	void g() { f(); }		//OK
+	A() { //f(); 			//错误，构造函数中调用虚函数不是多态，基类的f没有函数体，没法调用
+	}
+};
+
+class B:public A {
+public:
+	void f() { cout << "B:f()" << endl; }
+};
+
+int main() {
+	B b;
+	b.g();
+	return 0;
+}
+
+输出结果：
+B:f()
+
+抽象类中也可以有普通的成员变量和成员函数
+
+
+
+输入输出流
+istream 是用于输入的流类，cin 就是该类的对象
+ostream 是用于输出的流类，cout 就是该类的对象
+ifstream 是用于从文件读取数据的类
+ofstream 是用于向文件写入数据的类
+iostream 是既能用于输入，又能用于输出的类
+fstream 是既能从文件读取数据，又能向文件写入数据的类
+
+输入流对象：cin 与标准输入设备相连
+			cout 与标准输出设备相连
+			cerr 与标准错误输出设备相连
+			clog 与标准错误输出设备相连
+缺省情况下
+	cerr << "Hello, world" << endl;
+	clog << "Hello, world" << endl;
+和
+	cout << "Hello, world" << endl;一样
+	
+标准流对象
+cin 对应于标准输入流，用于从键盘读取数据，也可以被重定向为从文件中读取数据
+cout 对应于标准输出流，用于向屏幕输出数据，也可以被重定向为向文件写入数据
+cerr 对应于标准错误输出流，用于向屏幕输出出错信息
+clog 对应于标准错误输出流，用于向屏幕输出出错信息
+cerr 和 clog 的区别在于 cerr 不使用缓冲区，直接向显示器输出信息；而输出到 clog 中的信息会被先存放在缓冲区，缓冲区满或者刷新时才输出到屏幕
+
+重定向就是将输入的源或输出的目的地改变
+
+输出重定向：
+#include <iostream>
+using namespace std;
+int main() {
+	int x, y;
+	cin >> x >> y;
+	freopen("test.txt", "w", stdout);	//将标准输出重定向到 test.txt 文件
+	if(y == 0)		//除数为0则在屏幕上输出错误信息
+		cerr << "error." << endl;		//cerr不能重定向
+	else
+		cout << x / y;	//输出结果到 test.txt
+	return 0;
+}
+
+输入重定向：
+#include <iostream>
+using namespace std;
+int main() {
+	double f; int n;
+	freopen("t.txt", "r", stdin);
+	cin >> f >> n;
+	cout << f << "," << n << endl;
+	return 0;
+}
+
+t.txt:
+3.14 123
+输出：
+3.14,123
+
+判断输入流结束
+可以用如下方法判断输入流结束：
+如果是从文件输入，那么读到文件尾部，输入流就算结束
+如果从键盘输入，则在单独一行输入 Ctrl + Z 代表输入流结束
+
+
+istream 类的成员函数
+istream & getline(char * buf, int bufSize);
+从输入流中读取 bufSize - 1 个字符到缓冲区 buf，或读到碰到 '\n' 为止（哪个先到算哪个）
+istream & getline(char * buf, int bufSize, char delim);
+从输入流中读取 bufSize - 1 个字符到缓冲区 buf，或读到碰到 delim 字符为止（哪个先到算哪个）
+
+两个函数都会自动在 buf 中读入数据的结尾添加 '\0'，'\n'或 delim 都不会被读入 buf，但会被从输入流中取走
+
+可以用 if(!cin.getline(……))判断输入是否结束
+
+istream 类的成员函数
+bool eof();		//判断输入流是否结束
+int peek();		//返回下一个字符，但不从流中去掉
+istream & putback(char c);	//将字符 ch 放回输入流
+istream & ignore(int nCount = 1, int delim = EOF);	//从流中删掉最多 nCount 个字符，遇到 EOF 时结束
+
+#include <iostream>
+using namespace std;
+int main() {
+	int x;
+	char buf[100];
+	cin >> x;
+	cin.getline(buf, 90);
+	cout << buf << endl;
+	return 0;
+}
+
+输入：
+12 abcd↙
+输出：
+ abcd（空格+abcd）
+ 
+输入：
+12↙
+程序立即结束，输出：
+ 
+因为getline读到留在流中的'\n'就会返回，没有读任何东西到 getline 中
+
+
+使用流操纵算子控制输出格式
+整数流的基数：流操纵算子 dec, oct, hex, setbase
+浮点数的精度(precision, setprecision)
+设置域宽(setw, width)
+用户自定义的流操纵算子
+
+使用流操纵算子需要 #include <iomanip>
+
+#include <iostream> 
+using namespace std;
+
+int main() {
+	int n = 10;
+	cout << n << endl;
+	cout << hex << n << "\n"
+		 << dec << n << "\n"
+		 << oct << n << endl;
+}
+
+输出结果：
+10
+a
+10
+12
+
+控制浮点数精度的流操纵算子
+
+precision, setprecision
+precision是成员函数，其调用方式为：
+cout.precision(5);
+
+setprecision是流操作算子，其调用方式为：
+cout << setprecision(5);	//可以连续输出
+
+它们的功能相同
+指定输出浮点数的有效位数（非定点方式输出时）
+指定输出浮点数的小数点后的有效位数（定点方式输出时）
+定点方式：小数点必须出现在个位数后面
+
+如果两个矛盾的标志都被设置了，那么两个标志都不起作用，所以，在设置了某标志，又要改为设置其他矛盾的标志时，就应该先清除原先的标志
+
+#include <iostream> 
+#include <iomanip>
+using namespace std;
+
+int main() {
+	int n = 141;
+	//1）分别以十六进制、十进制、八进制先后输出 n
+	cout << "1)" << hex << n << " " << dec << n << " " << oct << n << endl;
+	double x = 1234567.89, y = 12.34567;
+	//2）保留5位有效数字
+	cout << "2)" << setprecision(5) << x << " " << y << endl;
+	//3）保留小数点后面5位
+	cout << "3)" << fixed << setprecision(5) << x << " " << y << endl;
+	//4）科学计数法输出，且保留小数点后面5位
+	cout << "4)" << scientific << setprecision(5) << x << " " << y << endl;
+	//5）非负数要显示正号，输出宽度为12字符，宽度不足则用'*'填补
+	cout << "5)" << showpos << fixed << setw(12) << setfill('*') << left << 12.1 << endl;
+	//6）非负数不显示正号，输出宽度为12字符，宽度不足则右边用填充字符填充
+	cout << "6)" << noshowpos << setw(12) << left << 12.1 << endl;
+	//7）输出宽度为12字符，宽度不足则左边用填充字符填充
+	cout << "7)" << setw(12) << right << 12.1 << endl;
+	//8）宽度不足时，负号和数值分列左右，中间用填充字符填充
+	cout << "8)" << setw(12) << internal << -12.1 << endl;
+	cout << "9)" << 12.1 << endl;
+	return 0;
+}
+
+1)8d 141 215
+2)1.2346e+06 12.346
+3)1234567.89000 12.34567
+4)1.23457e+06 1.23457e+01
+5)+12.10000***
+6)12.10000****
+7)****12.10000
+8)-***12.10000
+9)12.10000
+
+注意：setw 算子起作用是一次性的，即只影响下一次输出。每次需要指定输出的宽度时，都要使用 setw
+
+在读入字符时，setw 还能影响 cin 的行为，如：
+
+#include <iostream>
+#include <iomanip>
+using namespace std;
+int main() {
+	string s1, s2;
+	cin >> setw(4) >> s1 >> setw(3) >> s2;
+	cout << s1 << "," << s2 << endl;
+	return 0;
+}
+
+当输入：
+1234567890↙
+
+程序的输出结果：
+1234,567
+
+setw 用于 cin 时，同样只影响下一次的输入
+
+
+
+文件操作
+
+创建文件
+#include <fstream>	//包含头文件
+
+ofstream outFile("clients.dat", ios::out|ios::binary);
+-clients.dat	要创建的文件的名字
+-ios::out		文件打开方式
+	·ios::out	输出到文件，删除原有内容
+	·ios::app	输出到文件，保留原有内容，总是在尾部添加
+-ios::binary	以二进制文件格式打开文件
+
+也可以先创建 ofstream 对象，再用 open 函数打开
+ofstream fout;
+fout.open("test.out", ios::out|ios::binary);
+
+判断打开是否成功：
+if(!fout) {
+	cout << "File open error!" << endl;
+}
+
+文件名可以给出绝对路径，也可以给相对路径。没有交代路径信息，就是在当前文件夹下找文件
+
+文件名的绝对路径和相对路径
+绝对路径：
+"c::\\tmp\\mydir\\some.txt"
+
+相对路径：
+"\\tmp\\mydir\\some.txt"
+	当前盘符的根目录下的 tmp\dir\some.txt
+"tmp\\mydir\\some.txt"
+	当前文件夹的 tmp 子文件里面的
+"..\\tmp\\mydir\\some.txt"
+	当前文件夹的父文件夹下面的 tmp 子文件夹里面的
+"..\\..\\tmp\\mydir\\some.txt"
+	当前文件夹的父文件夹的父文件夹下面的 tmp 子文件夹里面的
+	
+文件的读写指针
+对于输入文件，有一个读指针
+对于输出文件，有一个写指针
+对于输入输出文件，有一个读写指针
+标识文件操作的当前位置，该指针在哪里，读写操作就在哪里进行
+
+ofstream fout("a1.out", ios::app);	//以添加方式打开
+long location = fout.tellp();		//取得写指针的位置
+location = 10;
+fout.seekp(location);				//将写指针移动到第 10 个字节处
+fout.seekp(location, ios::beg);		//从头数 location
+fout.seekp(location, ios::cur);		//从当前位置数 location
+fout.seekp(location, ios::end);		//从尾部数 location
+location 可以为负值
+
+ifstream fin("a1.in", ios::ate);
+//打开文件，定位文件指针到文件尾
+long location = fin.tellg();		//取得读指针的位置
+location = 10;
+fin.seekg(location);				//将读指针移动到第 10 个字节处
+fin.seekg(location, ios::beg);		//从头数 location
+fin.seekg(location, ios::cur);		//从当前位置数 location
+fin.seekg(location, ios::end);		//从尾部数 location
+location 可以为负值
+
+文件读写的一个例子：
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+int main() {
+	vector<int> v;
+	ifstream srcFile("in.txt", ios::in);
+	ofstream destFile("out.txt", ios::out);
+	int x;
+	while(srcFile >> x)
+		v.push_back(x);
+	sort(v.begin(), v.end());
+	for(int i = 0; i < v.size(); i++)
+		destFile << v[i] << " ";
+	destFile.close();
+	srcFile.close();
+	return 0;
+}
+
+若 in.txt 的内容为：
+1 234 9 45 6 879
+则执行本程序后，生成的 out.txt 的内容为：
+1 6 9 45 234 879 
+
+
+二进制文件读写
+二进制读文件：
+ifstream 和 fstream 的成员函数：
+istream & read(char * s, long n);
+将文件读指针指向的地方的 n 个字节内容，读入到内存地址 s ，然后将文件读指针向后移动 n 字节(以 ios::in 方式打开文件时，文件读指针开始指向文件开头)
+
+二进制写文件：
+ofstream 和 fstream 的成员函数：
+istream & write(const char * s, long n);
+将内存地址 s 处的 n 个字节内容，写入到文件中写指针指向的位置，然后将文件写指针向后移动 n 字节(以 ios::out 方式打开文件时，文件读指针开始指向文件开头，以 ios::app 方式打开文件时，文件写指针开始指向文件尾部)
+
+例：在文件中写入和读取一个整数
+#include <iostream>
+#include <fstream>
+using namespace std;
+int main() {
+	ofstream fout("some.dat", ios::out | ios::binary);
+	int x = 120;
+	fout.write((const char *)(&x), sizeof(int));
+	fout.close();
+	ifstream fin("some.dat", ios::in | ios::binary);
+	int y;
+	fin.read((char *) &y, sizeof(int));
+	fin.close();
+	cout << y << endl;
+	return 0;
+}
+
+从键盘输入几个学生的姓名和成绩，并以二进制文件形式保存
+#include <iostream>
+#include <fstream>
+using namespace std;
+struct student {
+	char name[20];
+	int score;
+};
+
+int main() {
+	student s;
+	ofstream OutFile("student.dat", ios::out | ios::binary);
+	while(cin >> s.name >> s.score)
+		OutFile.write((char *) & s, sizeof(s));
+	OutFile.close();		//文件用完一定要关闭
+	return 0;
+}
+
+将 student.dat 文件的内容读出并显示
+#include <iostream>
+#include <fstream>
+using namespace std;
+struct student {
+	char name[20];
+	int score;
+};
+
+int main() {
+	student s;
+	ifstream InFile("student.dat", ios::in | ios::binary);
+	if(!InFile) {
+		cout << "error" << endl;
+		return 0;
+	}
+	while(InFile.read((char *) &s, sizeof(s))) {
+		int readedBytes = InFile.gcount();		//看刚才读了多少字节
+		cout << s.name << " " << s.score << endl;
+	}
+	InFile.close();
+	return 0;
+}
+
+将 student.dat 文件的 Jane 的名字改成 Mike
+#include <iostream>
+#include <fstream>
+using namespace std;
+struct student {
+	char name[20];
+	int score;
+};
+
+int main() {
+	student s;
+	fstream iofile("student.dat", ios::in | ios::out | ios::binary);
+	if(!iofile) {
+		cout << "error";
+		return 0;
+	}
+	iofile.seekp(2 * sizeof(s), ios::beg);	//定位写指针到第三个记录
+	iofile.write("Mike", sizeof("Mike") + 1);
+	iofile.seekg(0, ios::beg);	//定位读指针到开头
+	while(iofile.read((char *) & s, sizeof(s)))
+		cout << s.name << " " << s.score << endl;
+	iofile.close();
+	return 0;
+}
+
+文件拷贝程序 mycopy 示例
+用法示例：
+mycopy src.dat dest.dat
+即将 src.dat 拷贝到 dest.dat 如果 dest.dat 原来就有，则原来的文件会被覆盖
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+int main(int argc, char * argv[]) {
+	if(argc != 3) {
+		cout << "File name missing" << endl;
+		return 0;
+	}
+	ifstream inFile(argv[1], ios::binary | ios::in);	//打开文件用于读
+	if(!inFile) {
+		cout << "Source file open error." << endl;
+		return 0;
+	}
+	ofstream outFile(argv[2], ios::binary | ios::out);	//打开文件用于写
+	if(!outFile) {
+		cout << "New file open error." << endl;
+		inFile.close();		//打开的文件一定要关闭
+		return 0;
+	}
+	char c;
+	while(inFile.get(c))	//每次读取一个字符
+		outFile.put(c);		//每次写入一个字符
+	outFile.close();
+	inFile.close();
+	return 0;
+}
+
+二进制文本和文本文件的区别
+Linux, Unix 下的换行符号：'\n' 	(ASCII码:0x0a)
+Windows 下的换行符号： '\r\n' 	(ASCII码:0x0d0a) endl就是 '\n'
+Mac OS 下的换行符号：'\r'		(ASCII码:0x0d)
+导致 Linux, Mac OS 文本文件在 Windows 记事本中打开时不换行
+
+Unix/Linux 下打开文件，用不用 ios::binary 没区别
+Windows 下打开文件，如果不用 ios::binary, 则：
+	读取文件时，所有的 '\r\n' 会被当做一个字符 '\n' 处理，即少读了一个字符 '\r'
+	写入文件时，写入单独的 '\n'时，系统自动在前面加一个 '\r'，即多写了一个 '\r'
+
+
+
+泛型程序设计与模板
+函数模板
+template <class 类型参数1, class 类型参数2, ......>
+返回值类型 模板名(形参表) {
+	函数体
+}
+
+例：Swap函数模板
+template <class T>
+void Swap(T & x, T & y) {
+	T tmp = x;
+	x = y;
+	y = tmp;
+}
+
+int main() {
+	int n = 1, m = 2;
+	Swap(n, m);
+	//编译器自动生成 void Swap(int &, int &)函数
+	double f = 1.2, g = 2.3;
+	Swap(f, g);
+	//编译器自动生成 void Swap(double &, double &)函数
+	return 0;
+}
+
+函数模板中可以有不止一个类型参数
+
+不通过参数实例化函数模板
+template <class T>
+T Inc(T n) {
+	return 1 + n;
+}
+
+int main() {
+	cout << Inc<double>(4) / 2;		//输出 2.5
+	return 0;
+}
+
+函数模板可以重载，只要它们的形参表或类型参数表不同即可
+template <class T1, class T2>
+void print(T1 arg1, T2 arg2) {
+	cout << arg1 << " " << arg2 << endl;
+}
+
+template <class T>
+void print(T arg1, T arg2) {
+	cout << arg1 << " " << arg2 << endl;
+}
+
+template <class T, class T2>
+void print(T arg1, T arg2) {
+	cout << arg1 << " " << arg2 << endl;
+}
+
+函数模板和函数的次序
+在有多个函数和函数模板名字相同的情况下，编译器如下处理一条函数调用语句
+1) 先找参数完全匹配的普通函数(非由模板实例化而得的函数)
+2) 再找参数完全匹配的模板函数
+3) 再找实参经过自动类型转换后能够匹配的普通函数
+4) 上面的都找不到，则报错
+
+template <class T>
+T Max(T a, T b) {
+	cout << "TemplateMax" << endl;
+	return 0;
+}
+
+template <class T, class T2>
+T Max(T a, T2 b) {
+	cout << "TemplateMax2" << endl;
+	return 0;
+}
+
+double Max(double a, double b) {
+	cout << "MyMax" << endl;
+	return 0;
+}
+
+int main() {
+	int i = 4, j = 5;
+	Max(1.2, 3.4);		//输出 MyMax
+	Max(i, j);			//输出 TemplateMax
+	Max(1.2, 3);		//输出 TemplateMax2
+	return 0;
+}
+
+匹配模板函数时，不进行类型自动转换
+template <class T>
+T myFunction(T arg1, T arg2) {
+	cout << arg1 << " " << arg2 << endl;
+	return arg1;
+}
+
+myFunction(5, 7);		//ok : replace T with int
+myFunction(5.8, 8.4);	//ok : replace T with double
+myFunction(5, 8.4)		//error, no matching function for call to 'myFunction(int, double)'
+
+函数模板示例：Map
+
+template <class T, class Pred>
+void Map(T s, T e, T x, Pred op) {
+	for(; s != e; s++, x++) {
+		* x = op(*s);
+	}
+}
+
+int Cube(int x) {
+	return x * x * x;
+}
+
+double Square(double x) {
+	return x * x;
+}
+
+int a[5] = {1, 2, 3, 4, 5}, b[5];
+double d[5] = {1.1, 2.1, 3.1, 4.1, 5.1}, c[5];
+int main() {
+	Map(a, a + 5, b, Square);
+	for(int i = 0; i < 5; i++)
+		cout << b[i] << ",";
+	cout << endl;
+	
+	Map(a, a + 5, b, Cube);
+	for(int i = 0; i < 5; i++)
+		cout << b[i] << ",";
+	cout << endl;
+	
+	Map(d, d + 5, c, Square);
+	for(int i = 0; i < 5; i++)
+		cout << c[i] << ",";
+	cout << endl;
+	return 0;
+}
+
+输出：
+1,4,9,16,25,
+1,8,27,64,125,
+1.21,4.41,9.61,16.81,26.01,
+
+Map(a, a + 5, b, Square);实例化出如下函数：
+void Map(int * s, int * e, int * x, double(*op)(double)) {
+	for(; s != e; ++s, ++x) {
+		* x = op(*s);
+	}
+}
+
+
+类模板
+为了快速定义出一批相似的类，可以定义类模板，然后由类模板生成不同的类
+
+类模板的定义
+template <class 类型参数1, class 类型参数2, ...>	//类型参数表
+class 类模板名 {
+	成员函数和成员变量
+};
+
+或
+
+template <typename 类型参数1, typename 类型参数2, ....>
+//类型参数表
+class 类模板名 {
+	成员函数和成员变量
+};
+
+类模板里成员函数的写法:
+temple <class 类型参数1, class 类型参数2, ...>	//类型参数表
+返回值类型 类模板名 <类型参数名列表>::成员函数名(参数表) {
+	.....
+}
+
+用类模板定义对象的写法:
+类模板名<真实类型参数表> 对象名(构造函数实参表);
+
+类模板示例：Pair类模板
+template <class T1, class T2>
+class Pair {
+public:
+	T1 key;		//关键字
+	T2 value;	//值
+	Pair(T1 k, T2 v):key(k), value(v) {};
+	bool operator<(const Pair<T1, T2> & p) const;
+};
+
+template <class T1, class T2>
+bool Pair<T1, T2>::operator<(const Pair<T1, T2> & p) const {
+	return key < p.key;
+}
+
+int main() {
+	Pair<string ,int> student("Tom", 19);
+	//实例化出一个类 Pair<string, int>
+	cout << student.key << " " << student.value;
+	return 0;
+}
+
+输出：
+Tom 19
+
+编译器由类模板生成类的过程叫做类模板的实例化。由类模板实例化得到的类，叫模板类
+
+同一个类模板的两个模板类是不兼容的
+如：
+Pair<string ,int> * p;
+Pair<string, double> a;
+p = &a;		//wrong
+
+函数模板作为类模板成员
+#include <iostream>
+using namespace std;
+
+template <class T>
+class A {
+public:
+	template<class T2>
+	void Func(T2 t) { cout << t; }	//成员函数模板
+};
+
+int main() {
+	A<int> a;
+	a.Func('K');		//成员函数模板 Func 被实例化
+	a.Func("hello");	//成员函数模板 Func 再次被实例化
+	return 0;
+}
+
+输出:
+KHello
+
+类模板与非类型参数
+类模板的<类型参数表>中可以出现非类型参数
+template <class T, int size>
+class CArray {
+	T array[size];
+public:
+	void Print() {
+		for(int i = 0; i < size; i++)
+			cout << array[i] << endl;
+	}
+};
+
+CArray<double, 40> a2;
+CArray<int, 50> a3;		//a2和a3属于不同的类
+
+
+类模板与继承
+类模板从类模板派生
+template <class T1, class T2>
+class A {
+	T1 v1;
+	T2 v2;
+};
+
+template <class T1, class T2>
+class B:public A<T2, T1> {
+	T1 v3; T2 v4;
+};
+
+template <class T>
+class C:public B<T, T> {
+	T v5;
+};
+
+int main() {
+	B<int, double> obj1;
+	C<int> obj2;
+	return 0;
+}
+
+类模板从模板类派生
+template <class T1, class T2>
+class A {
+	T1 v1; T2 v2;
+};
+
+template <class T>
+class B:public A<int, double> {
+	T v;
+};
+
+int main() {
+	B<char> obj1;	//自动胜场两个模板类 A<int, double> 和 B<char>
+	return 0;
+}
+
+类模板从普通类派生
+class A {
+	int v1;
+};
+
+template <class T>
+class B:public A {	//所有从B实例化得到的类，都以A为基类
+	T v;
+};
+
+int main () {
+	B<char> obj1;
+	return 0;
+}
+
+普通类从模板类派生
+template <class T>
+class A {
+	T v1;
+	int n;
+};
+
+class B:public A<int> {
+	double v;
+};
+
+int main() {
+	B obj1;
+	return 0;
+}
+
+
+类模板与友元
+函数、类、类的成员函数作为类模板的友元
+void Func1() {}
+class A {};
+class B {
+public:
+	void Func() {}
+};
+
+template <class T>
+class Tmp1 {
+	friend void Func1();
+	friend class A;
+	friend void B::Func();
+};	//任何从Tmp1实例化来的类，都有以上三个友元
+
+函数模板作为类模板的友元
+#include <iostream>
+#include <string>
+using namespace std;
+
+template <class T1, class T2>
+class Pair {
+private:
+	T1 key;		//关键字
+	T2 value;	//值
+public:
+	Pair(T1 k, T2 v):key(k), value(v) {};
+	bool operator<(const Pair<T1, T2> & p) const;
+	template <class T3, class T4>
+	friend ostream & operator<<(ostream & o, const Pair<T3, T4> & p);
+};
+
+template <class T1, class T2>
+bool Pair<T1, T2>::operator<(const Pair<T1, T2> & p) const {
+	//“小”的意思就是关键字小
+	return key < p.key;
+}
+
+template <class T1, class T2>
+ostream & operator<<(ostream & o, const Pair<T1, T2> & p) {
+	o << "(" << p.key << "," << p.value << ")";
+	return o;
+}
+
+int main() {
+	Pair<string, int> student("Tom", 29);
+	Pair<int, double> obj(12, 3.14);
+	cout << student << " " << obj;
+	return 0;
+}
+
+输出：
+(Tom,29) (12,3.14)
+
+任意从 template <class T1, class T2>
+ostream & operator<<(ostream & o, const Pair<T1, T2> & p)生成的函数，都是任意 Pair 模板类的友元
+
+函数模板作为类的友元
+#include <iostream>
+#include <string>
+using namespace std;
+
+class A {
+	int v;
+public:
+	A(int n):v(n) {}
+	template <class T>
+	friend void Print(const T & p);
+};
+
+template <class T>
+void Print(const T & p) {
+	cout << p.v;
+}
+
+int main() {
+	A a(4);
+	Print(a);
+	return 0;
+}
+
+输出：
+4
+
+所有从 template <class T>
+void Print(const T & p)生成的函数，都成为 A 的友元，但是自己写的函数 void Print(int a) {} 不会成为 A 的友元
+
+类模板作为类模板的友元
+#include <iostream>
+#include <string>
+using namespace std;
+
+template <class T>
+class B {
+	T v;
+public:
+	B(T n):v(n) {}
+	template <class T2>
+	friend class A;
+};
+
+template <class T>
+class A {
+public:
+	void Func() {
+		B<int> o(10);
+		cout << o.v << endl;
+	}
+};
+
+int main() {
+	A<double> a;
+	a.Func();
+	return 0;
+}
+
+输出：
+10
+
+A<double> 类，成了 B<int> 类的友元。任何从A模板实例化出来的类，都是任何B实例化出来的类的友元
+
+
+类模板与 static 成员
+类模板中可以定义静态成员，那么从该类模板实例化得到的所有类，都包含同样的静态成员
+
+#include <iostream>
+using namespace std;
+template <class T>
+class A {
+private:
+	static int count;
+public:
+	A() { count++; }
+	~A() { count--; }
+	A(A &) { count++; }
+	static void PrintCount() {
+		cout << count << endl;
+	}
+};
+
+template<> int A<int>::count = 0;
+template<> int A<double>::count = 0;
+int main() {
+	A<int> ia;
+	A<double> da;
+	ia.PrintCount();
+	da.PrintCount();
+	return 0;
+}
+
+输出：
+1
+1
